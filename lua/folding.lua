@@ -72,15 +72,6 @@ function M.update_folds()
 end
 
 
-function M.debug_folds()
-  for _, table in ipairs(M.current_buf_folds) do
-    local start_line = table['startLine']
-    local end_line = table['endLine']
-    print('startline', start_line, 'endline', end_line)
-  end
-end
-
-
 function M.fold_handler(err, result, ctx, config)
   -- params: err, method, result, client_id, bufnr
   -- XXX: handle err?
