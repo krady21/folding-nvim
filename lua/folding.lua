@@ -19,7 +19,6 @@ M.servers_supporting_folding = {
 
 M.active_folding_clients = {}
 
-
 function M.on_attach()
   M.setup_plugin()
   M.update_folds()
@@ -27,11 +26,15 @@ end
 
 
 function M.setup_plugin()
-  api.nvim_command("augroup FoldingCommand")
-    api.nvim_command("autocmd! * <buffer>")
-    api.nvim_command("autocmd BufEnter <buffer> lua require'folding'.update_folds()")
-    api.nvim_command("autocmd BufWritePost <buffer> lua require'folding'.update_folds()")
-  api.nvim_command("augroup end")
+  local gid = api.nvim_create_augroup("FoldingCommand", {})
+
+  for _, event in ipairs({ "BufEnter", "BufWritePost" }) do
+    api.nvim_create_autocmd(event, {
+      callback = function() M.update_folds() end,
+      buffer = api.nvim_get_current_buf(),
+      group = gid,
+    })
+  end
 
   local clients = vim.lsp.buf_get_clients()
 
