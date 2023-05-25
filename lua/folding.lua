@@ -34,7 +34,7 @@ function M.setup_plugin()
     })
   end
 
-  local clients = vim.lsp.buf_get_clients()
+  local clients = lsp.get_active_clients({ bufnr = bufnr })
 
   for _, client in pairs(clients) do
     local client_id = client['id']
@@ -58,7 +58,7 @@ function M.update_folds()
     -- In diff mode, use diff folding.
     api.nvim_win_set_option(current_window, 'foldmethod', 'diff')
   else
-    local clients = lsp.buf_get_clients(0)
+    local clients = lsp.get_active_clients({ bufnr = api.nvim_get_current_buf() })
     for client_id, client in pairs(clients) do
       if M.active_folding_clients[client_id] then
         -- XXX: better to pass callback in this method or add it directly in the config?
