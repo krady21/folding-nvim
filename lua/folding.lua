@@ -1,10 +1,7 @@
-local lsp =vim.lsp
-local api=vim.api
+local api = vim.api
+local lsp = vim.lsp
 
 local M = {}
-
--- TODO: per-buffer fold table?
-M.current_buf_folds = {}
 
 -- Informative table keeping track of language servers that implement textDocument/foldingRange.
 -- Not used at runtime (capability is resolved dynamically)
@@ -28,10 +25,11 @@ end
 function M.setup_plugin()
   local gid = api.nvim_create_augroup("FoldingCommand", {})
 
+  local bufnr = api.nvim_get_current_buf()
   for _, event in ipairs({ "BufEnter", "BufWritePost" }) do
     api.nvim_create_autocmd(event, {
       callback = function() M.update_folds() end,
-      buffer = api.nvim_get_current_buf(),
+      buffer = bufnr,
       group = gid,
     })
   end
@@ -41,9 +39,9 @@ function M.setup_plugin()
   for _, client in pairs(clients) do
     local client_id = client['id']
     if M.active_folding_clients[client_id] == nil then
-      local server_supports_folding = client['server_capabilities']['foldingRangeProvider'] or false
+      local server_supports_folding = vim.tbl_get(client, 'server_capabilities', 'foldingRangeProvider')
       if not server_supports_folding then
-        api.nvim_command(string.format('echom "lsp-folding: %s does not provide folding requests"', client['name']))
+        vim.notify_once(string.format("%s does not provide folding requests", client.name), vim.log.levels.WARN, { title = "folding-nvim" })
       end
 
       M.active_folding_clients[client_id] = server_supports_folding
@@ -101,7 +99,8 @@ function M.fold_handler(err, result, ctx, config)
         fold['endLine'] = M.adjust_foldend(fold['endLine'])
       end
       table.sort(result, function(a, b) return a['startLine']  < b['startLine'] end)
-      M.current_buf_folds = result
+      vim.b.folds = result
+
       local current_window = api.nvim_get_current_win()
       api.nvim_win_set_option(current_window, 'foldmethod', 'expr')
       api.nvim_win_set_option(current_window, 'foldexpr', 'folding_nvim#foldexpr()')
@@ -131,7 +130,7 @@ function M.get_fold_indic(lnum)
   local is_foldstart = false
   local is_foldend = false
 
-  for _, table in ipairs(M.current_buf_folds) do
+  for _, table in ipairs(vim.b.folds or {}) do
     local start_line = table['startLine']
     local end_line = table['endLine']
 
@@ -163,7 +162,6 @@ function M.get_fold_indic(lnum)
   else
     return fold_level
   end
-
 end
 
 
